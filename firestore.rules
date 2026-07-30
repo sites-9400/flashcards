@@ -20,8 +20,19 @@ service cloud.firestore {
       }
     }
 
+    // Deny-all for the AI grading daily-cap counter: this doc is written only
+    // by the gradeAnswer function via the Admin SDK, which bypasses rules
+    // entirely. Clients must never be able to read or write it, since a
+    // client-writable counter would let an authed user reset their own daily
+    // cap. This match must come before, and be excluded from, the catch-all
+    // below (a matching allow anywhere grants access regardless of order).
+    match /users/{uid}/gradingUsage/{document=**} {
+      allow read, write: if false;
+    }
+
     match /users/{uid}/{document=**} {
-      allow read, write: if request.auth != null && request.auth.uid == uid;
+      allow read, write: if request.auth != null && request.auth.uid == uid
+        && !(document.size() > 0 && document[0] == 'gradingUsage');
     }
   }
 }

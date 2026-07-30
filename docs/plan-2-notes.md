@@ -35,6 +35,8 @@ Live decks (`https://flashcards-be310.web.app`) contain only basic/cloze cards u
 1. **Anthropic Console API key:** already created by the user in a dedicated workspace with a spend limit, placed in `functions/.secret.local` (git-ignored). One formatting bug was found and fixed during this task (duplicated `sk-ant-` prefix); the corrected key was verified against the real Anthropic API before use anywhere else.
 2. **Blaze plan:** `flashcards-be310` is already on Blaze; the first functions deploy proceeded without any billing-related prompt or failure.
 
+This file intentionally contains prefix-pattern-only mentions of sk-ant for bug documentation; it contains no key material.
+
 ## New deferred ops item
 
 - Artifact Registry has no cleanup policy in `us-central1` for this project; run `firebase functions:artifacts:setpolicy` (or pass `--force` on a future `firebase deploy --only functions`) to avoid unbounded container-image storage growth. Not urgent at this project's scale, but cheap to fix next time functions are deployed.

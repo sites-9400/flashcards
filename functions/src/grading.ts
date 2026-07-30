@@ -26,11 +26,11 @@ export type Verdicts = z.infer<typeof verdictsSchema>;
 export const DAILY_CAP = 50;
 export const MODEL = 'claude-haiku-4-5';
 
-// Same 4am local rollover as the app's studyDay; duplicated because the
-// functions package cannot import from src/.
+// Manila-anchored (UTC+8) 4am rollover, computed in UTC so the result is
+// identical in any runtime timezone.
 export function gradingDay(d: Date): string {
-  const s = new Date(d.getTime() - 4 * 60 * 60 * 1000);
-  return `${s.getFullYear()}-${String(s.getMonth() + 1).padStart(2, '0')}-${String(s.getDate()).padStart(2, '0')}`;
+  const s = new Date(d.getTime() + (8 - 4) * 60 * 60 * 1000);
+  return `${s.getUTCFullYear()}-${String(s.getUTCMonth() + 1).padStart(2, '0')}-${String(s.getUTCDate()).padStart(2, '0')}`;
 }
 
 export function buildPrompt(input: GradeInput): string {

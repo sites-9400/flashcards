@@ -55,3 +55,11 @@ describe('user subtree rules', () => {
     await assertFails(getDoc(doc(anon, 'users/alice/cardStates/pub_c1')));
   });
 });
+
+describe('gradingUsage rules', () => {
+  it('owner cannot read or write their own daily grading-cap counter', async () => {
+    const alice = env.authenticatedContext('alice').firestore();
+    await assertFails(getDoc(doc(alice, 'users/alice/gradingUsage/2026-07-30')));
+    await assertFails(setDoc(doc(alice, 'users/alice/gradingUsage/2026-07-30'), { count: 0 }));
+  });
+});

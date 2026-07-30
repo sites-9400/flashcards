@@ -1,5 +1,6 @@
 import { onCall, HttpsError } from 'firebase-functions/v2/https';
 import { defineSecret } from 'firebase-functions/params';
+import * as logger from 'firebase-functions/logger';
 import { initializeApp } from 'firebase-admin/app';
 import { getFirestore, FieldValue } from 'firebase-admin/firestore';
 import Anthropic from '@anthropic-ai/sdk';
@@ -30,7 +31,8 @@ export const gradeAnswer = onCall({ secrets: [ANTHROPIC_API_KEY] }, async (reque
   const client = new Anthropic({ apiKey: ANTHROPIC_API_KEY.value() });
   try {
     return await gradeWithClient(client, parsed.data);
-  } catch {
+  } catch (err) {
+    logger.error('gradeAnswer grading failed', err);
     throw new HttpsError('unavailable', 'Grading is unavailable right now.');
   }
 });

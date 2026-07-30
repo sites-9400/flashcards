@@ -5,7 +5,5 @@ export default defineConfig({
   test: {
     environment: 'node',
     exclude: [...configDefaults.exclude, 'lib/**'],
-    // gradingDay() is local-time by design; tests assert Manila-local rollover
-    env: { TZ: 'Asia/Manila' },
   },
 });
