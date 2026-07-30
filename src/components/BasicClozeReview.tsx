@@ -9,7 +9,6 @@ export default function BasicClozeReview({ card, intervals, onGrade }: {
   onGrade: (g: Grade) => void;
 }) {
   const [revealed, setRevealed] = useState(false);
-  useEffect(() => { setRevealed(false); }, [card.id]);
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.code === 'Space') { e.preventDefault(); setRevealed(true); }

@@ -16,6 +16,7 @@ export default function Review() {
   const [title, setTitle] = useState('');
   const [status, setStatus] = useState<'loading' | 'ready' | 'error'>('loading');
   const [syncIssue, setSyncIssue] = useState(false);
+  const [round, setRound] = useState(0);
 
   useEffect(() => {
     if (!user) return;
@@ -52,8 +53,9 @@ export default function Review() {
     if (!card || !user) return;
     const prev = states.get(card.id);
     const next = applyReview(prev ?? newCardState(deckId, card.id), g, new Date());
-    persistReview(user.uid, card, prev, next, g, extras).catch(() => setSyncIssue(true));
+    void persistReview(user.uid, card, prev, next, g, extras).catch(() => setSyncIssue(true));
     setStates((m) => new Map(m).set(card.id, next));
+    setRound((r) => r + 1);
     if (g === 'again') {
       setQueue((q) => [...q.slice(0, pos), ...q.slice(pos + 1), card]);
     } else {
@@ -91,10 +93,10 @@ export default function Review() {
         </span>
       </header>
       {(card.type === 'basic' || card.type === 'cloze') && intervals && (
-        <BasicClozeReview card={card} intervals={intervals} onGrade={grade} />
+        <BasicClozeReview key={card.id + '-' + round} card={card} intervals={intervals} onGrade={grade} />
       )}
       {(card.type === 'mcq' || card.type === 'hypo') && (
-        <div className="border border-mustard rounded-lg p-4 text-sm opacity-70">
+        <div key={card.id + '-' + round} className="border border-mustard rounded-lg p-4 text-sm opacity-70">
           {card.type.toUpperCase()} cards arrive in the next milestone.
         </div>
       )}
