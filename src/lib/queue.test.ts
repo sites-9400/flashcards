@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { buildQueue } from './queue';
-import { newCardState } from './scheduler';
+import { buildQueue, buildPrepQueue } from './queue';
+import { newCardState, retrievability } from './scheduler';
 import type { Card, CardStateDoc } from './types';
 
 const NOW = new Date('2026-07-30T10:00:00+08:00');
@@ -141,4 +141,38 @@ describe('buildQueue', () => {
     expect(basicPos).toBeGreaterThan(-1);
     expect(q.filter((c) => c.type === 'hypo').map((c) => c.id)).toEqual(['h1', 'h2', 'h3']);
   });
+});
+
+const seenState = (deckId: string, cardId: string, daysAgo: number, stability: number): CardStateDoc => ({
+  ...newCardState(deckId, cardId),
+  state: 'review', reps: 3, stability,
+  lastReview: NOW.getTime() - daysAgo * 24 * 3600e3,
+  due: NOW.getTime() - 3600e3,
+});
+
+it('buildPrepQueue puts unseen first then weakest retrievability ascending', () => {
+  const mkBasic = (id: string): Card => ({ id, type: 'basic', front: 'f', back: 'b', tags: ['t'], source: { docId: 'd', heading: 'h' } });
+  const items = ['unseen', 'weak', 'mid', 'strong'].map((id) => ({ deckId: 'd1', card: mkBasic(id) }));
+  const states = new Map([
+    ['weak', seenState('d1', 'weak', 20, 2)],
+    ['mid', seenState('d1', 'mid', 5, 10)],
+    ['strong', seenState('d1', 'strong', 1, 60)],
+  ]);
+  const rWeak = retrievability(states.get('weak')!, NOW);
+  const rMid = retrievability(states.get('mid')!, NOW);
+  const rStrong = retrievability(states.get('strong')!, NOW);
+  expect(rWeak).toBeLessThan(rMid);
+  expect(rMid).toBeLessThan(rStrong);
+  const q = buildPrepQueue(items, states, NOW);
+  expect(q.map((i) => i.card.id)).toEqual(['unseen', 'weak', 'mid', 'strong']);
+});
+
+it('buildPrepQueue honors skipHypos and never leads with a hypo', () => {
+  const hypo: Card = { id: 'h1', type: 'hypo', facts: 'F', question: 'Q', alac: { answer: 'A', legalBasis: 'L', application: 'Ap', conclusion: 'C' }, tags: ['t'], source: { docId: 'd', heading: 'h' } };
+  const basic: Card = { id: 'b1', type: 'basic', front: 'f', back: 'b', tags: ['t'], source: { docId: 'd', heading: 'h' } };
+  const items = [{ deckId: 'd1', card: hypo }, { deckId: 'd1', card: basic }];
+  expect(buildPrepQueue(items, new Map(), NOW, true).map((i) => i.card.id)).toEqual(['b1']);
+  const q = buildPrepQueue(items, new Map(), NOW);
+  expect(q).toHaveLength(2);
+  expect(q[0].card.type).not.toBe('hypo');
 });

@@ -4,6 +4,8 @@ import {
 import { db } from './firebase';
 import { stateId } from './ids';
 import { startOfStudyDay, studyDay } from './scheduler';
+import { inScope } from './stats';
+import type { PrepItem } from './queue';
 import type { Card, CardStateDoc, Deck, EventDoc, Grade, GradeExtras, SubscriptionDoc } from './types';
 
 export async function fetchDecks(uid: string): Promise<Deck[]> {
@@ -72,4 +74,32 @@ export async function saveEvent(
 
 export async function deleteEvent(uid: string, eventId: string): Promise<void> {
   await deleteDoc(doc(db, 'users', uid, 'events', eventId));
+}
+
+export async function fetchPrepBundle(uid: string, eventId: string): Promise<{
+  event: EventDoc; items: PrepItem[]; states: Map<string, CardStateDoc>;
+}> {
+  const [eventSnap, decks, statesSnap] = await Promise.all([
+    getDoc(doc(db, 'users', uid, 'events', eventId)),
+    fetchDecks(uid),
+    getDocs(collection(db, 'users', uid, 'cardStates')),
+  ]);
+  if (!eventSnap.exists()) throw new Error('event-not-found');
+  const event = eventSnap.data() as EventDoc;
+
+  const cardsSnaps = await Promise.all(
+    decks.map((deck) => getDocs(collection(db, 'decks', deck.id, 'cards'))),
+  );
+  const items: PrepItem[] = [];
+  decks.forEach((deck, i) => {
+    cardsSnaps[i].docs.forEach((d) => {
+      const card = d.data() as Card;
+      if (inScope(deck.id, card.tags, event)) items.push({ deckId: deck.id, card });
+    });
+  });
+
+  const states = new Map<string, CardStateDoc>();
+  statesSnap.docs.forEach((d) => { const s = d.data() as CardStateDoc; states.set(s.cardId, s); });
+
+  return { event, items, states };
 }

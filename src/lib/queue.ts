@@ -1,15 +1,16 @@
+import { retrievability } from './scheduler';
 import type { Card, CardStateDoc } from './types';
 
 const HYPO_COST = 3;
 export const MAX_SESSION_HYPOS = 3;
 
-// Interleaves hypo cards into the queue at roughly even intervals.
-// Invariant: when at least one non-hypo card is present, the queue never starts with a hypo.
+// Interleaves "hypo-like" items into the queue at roughly even intervals.
+// Invariant: when at least one non-hypo item is present, the queue never starts with a hypo.
 // Limitation: perfect spreading is impossible when hypos outnumber non-hypos; tail clumping is acceptable in that regime.
 // Preserves relative order within both hypos and non-hypos.
-function interleaveHypos(cards: Card[]): Card[] {
-  const hypos = cards.filter((c) => c.type === 'hypo').slice(0, MAX_SESSION_HYPOS);
-  const others: Card[] = cards.filter((c) => c.type !== 'hypo');
+function interleaveByType<T>(items: T[], isHypo: (t: T) => boolean): T[] {
+  const hypos = items.filter(isHypo).slice(0, MAX_SESSION_HYPOS);
+  const others: T[] = items.filter((t) => !isHypo(t));
   if (hypos.length === 0) return others;
   const out = [...others];
   hypos.forEach((h, i) => {
@@ -44,5 +45,26 @@ export function buildQueue(args: {
     budget -= cost;
     newCards.push(c);
   }
-  return interleaveHypos([...dueCards, ...newCards]);
+  return interleaveByType([...dueCards, ...newCards], (c) => c.type === 'hypo');
+}
+
+export interface PrepItem { deckId: string; card: Card }
+
+// Prep sessions rank by weakness rather than due date: unseen cards (no
+// state entry) come first in their original order, then seen cards ordered
+// by retrievability ascending (weakest recall first). The hypo cap and
+// interleave rules are shared with buildQueue via interleaveByType.
+export function buildPrepQueue(
+  items: PrepItem[], states: Map<string, CardStateDoc>, now: Date, skipHypos?: boolean,
+): PrepItem[] {
+  const filtered = skipHypos ? items.filter((i) => i.card.type !== 'hypo') : items;
+
+  const unseen = filtered.filter((i) => !states.has(i.card.id));
+  const seen = filtered
+    .filter((i) => states.has(i.card.id))
+    .map((i) => ({ i, r: retrievability(states.get(i.card.id)!, now) }))
+    .sort((a, b) => a.r - b.r)
+    .map(({ i }) => i);
+
+  return interleaveByType([...unseen, ...seen], (i) => i.card.type === 'hypo');
 }

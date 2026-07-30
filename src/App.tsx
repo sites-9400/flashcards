@@ -3,6 +3,7 @@ import { AuthProvider, useUser } from './lib/auth';
 import SignIn from './screens/SignIn';
 import Home from './screens/Home';
 import Review from './screens/Review';
+import Prep from './screens/Prep';
 import Events from './screens/Events';
 import type { ReactNode } from 'react';
 
@@ -20,6 +21,7 @@ export default function App() {
           <Route path="/signin" element={<SignIn />} />
           <Route path="/" element={<RequireAuth><Home /></RequireAuth>} />
           <Route path="/review/:deckId" element={<RequireAuth><Review /></RequireAuth>} />
+          <Route path="/prep/:eventId" element={<RequireAuth><Prep /></RequireAuth>} />
           <Route path="/events" element={<RequireAuth><Events /></RequireAuth>} />
         </Routes>
       </BrowserRouter>
