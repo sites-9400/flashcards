@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useUser } from './lib/auth';
 import SignIn from './screens/SignIn';
 import Home from './screens/Home';
+import Review from './screens/Review';
 import type { ReactNode } from 'react';
 
 function RequireAuth({ children }: { children: ReactNode }) {
@@ -17,6 +18,7 @@ export default function App() {
         <Routes>
           <Route path="/signin" element={<SignIn />} />
           <Route path="/" element={<RequireAuth><Home /></RequireAuth>} />
+          <Route path="/review/:deckId" element={<RequireAuth><Review /></RequireAuth>} />
         </Routes>
       </BrowserRouter>
     </AuthProvider>
