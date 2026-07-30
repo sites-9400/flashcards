@@ -1,6 +1,9 @@
-import { signIn } from '../lib/auth';
+import { Navigate } from 'react-router-dom';
+import { signIn, useUser } from '../lib/auth';
 
 export default function SignIn() {
+  const { user, loading } = useUser();
+  if (!loading && user) return <Navigate to="/" replace />;
   return (
     <main className="min-h-dvh flex flex-col items-center justify-center gap-6 p-6">
       <h1 className="text-3xl font-bold text-maroon">LawDeck</h1>
