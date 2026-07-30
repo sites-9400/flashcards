@@ -14,6 +14,7 @@ import type { CardStateDoc, EventDoc, Grade, GradeExtras } from '../lib/types';
 export default function Prep() {
   const { eventId = '' } = useParams();
   const { user } = useUser();
+  const [items, setItems] = useState<PrepItem[]>([]);
   const [queue, setQueue] = useState<PrepItem[]>([]);
   const [states, setStates] = useState<Map<string, CardStateDoc>>(new Map());
   const [pos, setPos] = useState(0);
@@ -34,6 +35,7 @@ export default function Prep() {
     ]).then(([b, evs]) => {
       if (cancelled) return;
       setEvent(b.event);
+      setItems(b.items);
       setStates(b.states);
       setPos(0);
       setEvents(evs);
@@ -50,9 +52,16 @@ export default function Prep() {
     () => (card && item ? previewIntervals(state ?? newCardState(item.deckId, card.id), new Date()) : null),
     [card, item, state],
   );
+  // Readiness is the average predicted retrievability across ALL in-scope
+  // cards (unseen count as 0), per the plan formula. It must be computed
+  // from `items` (the full fetchPrepBundle result), not `queue`: the queue
+  // is session-capped (hypo cap, interleave order) and toggle-filtered
+  // (skipHypos), so deriving readiness from it would make the displayed
+  // percentage change when the toggle is flipped or when scope exceeds the
+  // hypo cap, even though nothing has been graded.
   const readiness = useMemo(
-    () => Math.round(eventReadiness(queue.map((i) => ({ deckId: i.deckId, cardId: i.card.id })), states, new Date()) * 100),
-    [queue, states],
+    () => Math.round(eventReadiness(items.map((i) => ({ deckId: i.deckId, cardId: i.card.id })), states, new Date()) * 100),
+    [items, states],
   );
 
   // Re-entrancy: unreachable via normal input. React 18 flushes state updates
