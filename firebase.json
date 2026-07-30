@@ -5,10 +5,12 @@
     "ignore": ["firebase.json", "**/.*", "**/node_modules/**"],
     "rewrites": [{ "source": "**", "destination": "/index.html" }]
   },
+  "functions": { "source": "functions", "runtime": "nodejs22" },
   "emulators": {
     "auth": { "port": 9099 },
     "firestore": { "port": 8080 },
     "hosting": { "port": 5002 },
+    "functions": { "port": 5001 },
     "ui": { "enabled": true }
   }
 }
