@@ -197,7 +197,7 @@ Spec 6: "sessions interleave at most a handful of hypos." Cap at 3 hypos per ses
 
 **Interfaces:**
 - Consumes: existing `buildQueue` args.
-- Produces: same signature `buildQueue(args): Card[]`; new exported constant `MAX_SESSION_HYPOS = 3`. Behavior: at most 3 hypo cards in the returned queue (excess hypos are simply omitted; they remain due and surface next session); hypos are positioned at even intervals through the non-hypo cards; relative order within hypos and within non-hypos is preserved. Task 3+ consume `buildQueue` unchanged.
+- Produces: same signature `buildQueue(args): Card[]`; new exported constant `MAX_SESSION_HYPOS = 3`. Behavior: at most 3 hypo cards in the returned queue (excess hypos are simply omitted; they remain due and surface next session); hypos are positioned at even intervals through the non-hypo cards; relative order within hypos and within non-hypos is preserved; when at least one non-hypo card is in the queue, the queue never STARTS with a hypo (tail hypos are acceptable when hypos outnumber others, where perfect spreading is impossible). Task 3+ consume `buildQueue` unchanged. (Invariant amended during execution: the original sample code allowed a leading hypo when hypos outnumber others; review round 1 fixed it.)
 
 - [ ] **Step 1: Write failing tests**
 
@@ -676,11 +676,11 @@ export default function McqReview({ card, intervals, onGrade }: {
 
 - [ ] **Step 5: Route mcq in Review.tsx**
 
-In the load effect change the queue filter to `c.type === 'basic' || c.type === 'cloze' || c.type === 'mcq'`, and replace the placeholder branch's mcq half with:
+In the load effect change the queue filter to `c.type === 'basic' || c.type === 'cloze' || c.type === 'mcq'`, and replace the placeholder branch's mcq half with (NOTE, amended during execution: every interaction component must carry the remount key `key={card.id + '-' + round}` using the `round` counter Task 3's fix round added to Review.tsx, so per-card state always resets even when an again-requeue lands the same card in the same slot):
 
 ```tsx
 {card.type === 'mcq' && intervals && (
-  <McqReview card={card} intervals={intervals} onGrade={grade} />
+  <McqReview key={card.id + '-' + round} card={card} intervals={intervals} onGrade={grade} />
 )}
 {card.type === 'hypo' && (
   <div className="border border-mustard rounded-lg p-4 text-sm opacity-70">
@@ -979,7 +979,7 @@ Expected: PASS.
 - [ ] **Step 6: Wire into Review.tsx: route + queue + skip toggle**
 
 - Queue filter becomes: `skipHypos ? b.cards.filter((c) => c.type !== 'hypo') : b.cards` where `skipHypos` is new state `const [skipHypos, setSkipHypos] = useState(false);` added to the load effect deps so toggling reloads the queue. (buildQueue also accepts `skipHypos`; pass it instead of pre-filtering: `buildQueue({ cards: b.cards, ..., skipHypos })`.)
-- Replace the hypo placeholder branch with `<HypoReview card={card} intervals={intervals} onGrade={grade} />` (no `aiCheck` yet).
+- Replace the hypo placeholder branch with `<HypoReview key={card.id + '-' + round} card={card} intervals={intervals} onGrade={grade} />` (no `aiCheck` yet; the remount key uses the `round` counter from Task 3's fix, same pattern as McqReview).
 - Header toggle (plain SVG-free text button, right of the count):
 
 ```tsx
