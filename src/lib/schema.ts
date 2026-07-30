@@ -26,6 +26,10 @@ export const cardSchema = z.discriminatedUnion('type', [
     ...baseFields, type: z.literal('cloze'),
     text: clean.refine((t) => /\{\{c\d+::[^}]+\}\}/.test(t), 'cloze text needs at least one {{cN::...}} marker'),
     clozeIndex: z.number().int().min(1),
+  }).superRefine((c, ctx) => {
+    if (!c.text.includes(`{{c${c.clozeIndex}::`)) {
+      ctx.addIssue({ code: 'custom', message: `text has no {{c${c.clozeIndex}::...}} marker for clozeIndex ${c.clozeIndex}` });
+    }
   }),
   z.object({
     ...baseFields, type: z.literal('mcq'),

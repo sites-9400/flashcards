@@ -52,4 +52,21 @@ describe('buildQueue', () => {
     const q = buildQueue({ cards, states, newCardsPerDay: 5, newIntroducedToday: 0, now: NOW });
     expect(q).toHaveLength(0);
   });
+
+  it('skips a hypo that exceeds remaining budget but still admits a later cheaper card', () => {
+    const hypo: Card = {
+      id: 'h1', type: 'hypo', facts: 'F', question: 'Q',
+      alac: { answer: 'A', legalBasis: 'L', application: 'Ap', conclusion: 'C' },
+      tags: ['t'], source: { docId: 'd', heading: 'h' },
+    };
+    const basic: Card = {
+      id: 'b1', type: 'basic', front: 'f', back: 'b',
+      tags: ['t'], source: { docId: 'd', heading: 'h' },
+    };
+    const q = buildQueue({
+      cards: [hypo, basic], states: new Map(),
+      newCardsPerDay: 2, newIntroducedToday: 0, now: NOW,
+    });
+    expect(q.map((c) => c.id)).toEqual(['b1']);
+  });
 });

@@ -29,4 +29,15 @@ describe('cardSchema', () => {
     expect(cardSchema.safeParse({ ...base, type: 'basic', front: 'bad — dash', back: 'A' }).success).toBe(false);
     expect(cardSchema.safeParse({ ...base, type: 'basic', front: 'ok', back: 'fire 🔥' }).success).toBe(false);
   });
+  it('rejects a cloze card whose clozeIndex has no matching marker', () => {
+    const card = {
+      id: 'abc123', type: 'cloze',
+      text: 'Venue for real actions is {{c1::where the property is located}}.',
+      clozeIndex: 3,
+      tags: ['venue'],
+      source: { docId: 'doc1', heading: 'Venue' },
+    };
+    expect(cardSchema.safeParse(card).success).toBe(false);
+    expect(cardSchema.safeParse({ ...card, clozeIndex: 1 }).success).toBe(true);
+  });
 });
