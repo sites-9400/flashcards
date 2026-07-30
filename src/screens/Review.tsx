@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState, useCallback } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useUser } from '../lib/auth';
-import { fetchDeckBundle, fetchEvents, persistReview } from '../lib/data';
+import { fetchDeckBundle, fetchEvents, fetchPastAnswers, persistReview } from '../lib/data';
 import { buildQueue } from '../lib/queue';
 import { applyReviewClamped, newCardState, previewIntervals } from '../lib/scheduler';
 import { inScope } from '../lib/stats';
@@ -118,8 +118,15 @@ export default function Review() {
       {card.type === 'mcq' && intervals && (
         <McqReview key={card.id + '-' + round} card={card} intervals={intervals} onGrade={grade} />
       )}
-      {card.type === 'hypo' && intervals && (
-        <HypoReview key={card.id + '-' + round} card={card} intervals={intervals} onGrade={grade} aiCheck={requestAiGrading} />
+      {card.type === 'hypo' && intervals && user && (
+        <HypoReview
+          key={card.id + '-' + round}
+          card={card}
+          intervals={intervals}
+          onGrade={grade}
+          aiCheck={requestAiGrading}
+          pastAnswers={() => fetchPastAnswers(user.uid, card.id)}
+        />
       )}
     </main>
   );

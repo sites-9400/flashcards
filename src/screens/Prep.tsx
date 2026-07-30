@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState, useCallback } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useUser } from '../lib/auth';
-import { fetchPrepBundle, fetchEvents, persistReview } from '../lib/data';
+import { fetchPrepBundle, fetchEvents, fetchPastAnswers, persistReview } from '../lib/data';
 import { buildPrepQueue, type PrepItem } from '../lib/queue';
 import { applyReviewClamped, newCardState, previewIntervals } from '../lib/scheduler';
 import { inScope, eventReadiness } from '../lib/stats';
@@ -126,8 +126,15 @@ export default function Prep() {
       {card.type === 'mcq' && intervals && (
         <McqReview key={card.id + '-' + round} card={card} intervals={intervals} onGrade={grade} />
       )}
-      {card.type === 'hypo' && intervals && (
-        <HypoReview key={card.id + '-' + round} card={card} intervals={intervals} onGrade={grade} aiCheck={requestAiGrading} />
+      {card.type === 'hypo' && intervals && user && (
+        <HypoReview
+          key={card.id + '-' + round}
+          card={card}
+          intervals={intervals}
+          onGrade={grade}
+          aiCheck={requestAiGrading}
+          pastAnswers={() => fetchPastAnswers(user.uid, card.id)}
+        />
       )}
     </main>
   );

@@ -9,20 +9,31 @@ const VERDICTS: { v: BeatVerdict; label: string }[] = [
   { v: 'missed', label: 'Missed' },
 ];
 
-export default function HypoReview({ card, intervals, onGrade, aiCheck }: {
+export default function HypoReview({ card, intervals, onGrade, aiCheck, pastAnswers }: {
   card: HypoCard;
   intervals: Record<Grade, string>;
   onGrade: (g: Grade, extras?: GradeExtras) => void;
   aiCheck?: (typedAnswer: string, card: HypoCard) => Promise<AiVerdict[] | null>;
+  pastAnswers?: () => Promise<{ ts: number; typedAnswer: string }[]>;
 }) {
   const [typed, setTyped] = useState('');
   const [revealedBeats, setRevealedBeats] = useState(0);
   const [marks, setMarks] = useState<Partial<Record<BeatKey, BeatVerdict>>>({});
   const [verdicts, setVerdicts] = useState<AiVerdict[] | null>(null);
   const [checking, setChecking] = useState(false);
+  const [pastOpen, setPastOpen] = useState(false);
+  const [past, setPast] = useState<{ ts: number; typedAnswer: string }[] | null>(null);
   useEffect(() => {
     setTyped(''); setRevealedBeats(0); setMarks({}); setVerdicts(null); setChecking(false);
+    setPastOpen(false); setPast(null);
   }, [card.id]);
+
+  const togglePastAnswers = () => {
+    setPastOpen((open) => !open);
+    if (past === null && pastAnswers) {
+      pastAnswers().then(setPast).catch(() => setPast([]));
+    }
+  };
 
   const allRevealed = revealedBeats >= BEATS.length;
   const allMarked = BEATS.every((b) => marks[b.key] !== undefined);
@@ -135,6 +146,29 @@ export default function HypoReview({ card, intervals, onGrade, aiCheck }: {
           )}
           {allMarked && score !== null && (
             <GradeBar intervals={intervals} onGrade={confirm} highlight={suggestedGrade(score)} />
+          )}
+          {pastAnswers && (
+            <div>
+              <button
+                className="rounded-lg py-2 border border-gray-400/60 text-sm w-full"
+                onClick={togglePastAnswers}
+              >
+                Past answers
+              </button>
+              {pastOpen && (
+                past === null ? (
+                  <p className="text-xs opacity-60 mt-2">Loading...</p>
+                ) : past.length === 0 ? (
+                  <p className="text-xs opacity-60 mt-2">None yet.</p>
+                ) : (
+                  <ul className="text-xs opacity-60 mt-2 flex flex-col gap-1">
+                    {past.map((p) => (
+                      <li key={p.ts}>{new Date(p.ts).toLocaleDateString()}: {p.typedAnswer}</li>
+                    ))}
+                  </ul>
+                )
+              )}
+            </div>
           )}
         </>
       )}

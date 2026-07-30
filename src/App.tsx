@@ -5,6 +5,7 @@ import Home from './screens/Home';
 import Review from './screens/Review';
 import Prep from './screens/Prep';
 import Events from './screens/Events';
+import Weak from './screens/Weak';
 import type { ReactNode } from 'react';
 
 function RequireAuth({ children }: { children: ReactNode }) {
@@ -23,6 +24,7 @@ export default function App() {
           <Route path="/review/:deckId" element={<RequireAuth><Review /></RequireAuth>} />
           <Route path="/prep/:eventId" element={<RequireAuth><Prep /></RequireAuth>} />
           <Route path="/events" element={<RequireAuth><Events /></RequireAuth>} />
+          <Route path="/weak" element={<RequireAuth><Weak /></RequireAuth>} />
         </Routes>
       </BrowserRouter>
     </AuthProvider>

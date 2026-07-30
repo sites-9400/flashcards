@@ -104,6 +104,26 @@ export async function fetchPrepBundle(uid: string, eventId: string): Promise<{
   return { event, items, states };
 }
 
+export async function fetchRecentLogs(uid: string, sinceTs: number): Promise<LogLike[]> {
+  const snap = await getDocs(
+    query(collection(db, 'users', uid, 'reviewLogs'), where('ts', '>=', sinceTs)),
+  );
+  return snap.docs.map((d) => d.data() as LogLike);
+}
+
+export async function fetchPastAnswers(
+  uid: string, cardId: string,
+): Promise<{ ts: number; typedAnswer: string }[]> {
+  const snap = await getDocs(
+    query(collection(db, 'users', uid, 'reviewLogs'), where('cardId', '==', cardId)),
+  );
+  return snap.docs
+    .map((d) => d.data() as { ts: number; typedAnswer?: string })
+    .filter((l): l is { ts: number; typedAnswer: string } => !!l.typedAnswer)
+    .sort((a, b) => b.ts - a.ts)
+    .slice(0, 5);
+}
+
 export async function fetchHomeBundle(uid: string): Promise<{
   decks: Deck[];
   events: EventDoc[];
@@ -113,15 +133,14 @@ export async function fetchHomeBundle(uid: string): Promise<{
 }> {
   const now = new Date();
   const cutoff = now.getTime() - 30 * 24 * 60 * 60 * 1000;
-  const [decks, allEvents, statesSnap, logsSnap] = await Promise.all([
+  const [decks, allEvents, statesSnap, logs] = await Promise.all([
     fetchDecks(uid),
     fetchEvents(uid),
     getDocs(collection(db, 'users', uid, 'cardStates')),
-    getDocs(query(collection(db, 'users', uid, 'reviewLogs'), where('ts', '>=', cutoff))),
+    fetchRecentLogs(uid, cutoff),
   ]);
   const events = allEvents.filter((e) => e.date >= startOfStudyDay(now));
   const states = statesSnap.docs.map((d) => d.data() as CardStateDoc);
-  const logs = logsSnap.docs.map((d) => d.data() as LogLike);
 
   // Decks worth reading cards for: any deck an upcoming event names directly
   // via coverage.deckIds, plus (when any upcoming event also has coverage

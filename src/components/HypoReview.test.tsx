@@ -93,3 +93,12 @@ it('grades with number keys once all beats are marked', () => {
   fireEvent.keyDown(window, { code: 'Digit3' });
   expect(onGrade).toHaveBeenCalledWith('good', undefined);
 });
+
+it('lists past typed answers on demand after full reveal', async () => {
+  const pastAnswers = vi.fn().mockResolvedValue([{ ts: 1753800000000, typedAnswer: 'old answer' }]);
+  render(<HypoReview card={card} intervals={intervals} onGrade={vi.fn()} pastAnswers={pastAnswers} />);
+  revealAll();
+  fireEvent.click(screen.getByRole('button', { name: /past answers/i }));
+  expect(await screen.findByText(/old answer/)).toBeInTheDocument();
+  expect(pastAnswers).toHaveBeenCalledTimes(1);
+});
