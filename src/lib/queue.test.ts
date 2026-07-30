@@ -102,4 +102,43 @@ describe('buildQueue', () => {
     expect(hypoPos).toBeGreaterThan(0);
     expect(q.length).toBe(5);
   });
+
+  it('never leads the queue with a hypo when non-hypos are present (2h+1o)', () => {
+    const mkHypo = (id: string): Card => ({
+      id, type: 'hypo', facts: 'F', question: 'Q',
+      alac: { answer: 'A', legalBasis: 'L', application: 'Ap', conclusion: 'C' },
+      tags: ['t'], source: { docId: 'd', heading: 'h' },
+    });
+    const mkBasic = (id: string): Card => ({
+      id, type: 'basic', front: 'f', back: 'b', tags: ['t'], source: { docId: 'd', heading: 'h' },
+    });
+    const cards = [mkHypo('h1'), mkHypo('h2'), mkBasic('b1')];
+    const q = buildQueue({
+      cards, states: new Map(),
+      newCardsPerDay: 50, newIntroducedToday: 0, now: NOW,
+    });
+    expect(q[0].type).toBe('basic');
+    expect(q.map((c) => c.id)).toEqual(['b1', 'h1', 'h2']);
+  });
+
+  it('never leads the queue with a hypo and preserves order (3h+2o)', () => {
+    const mkHypo = (id: string): Card => ({
+      id, type: 'hypo', facts: 'F', question: 'Q',
+      alac: { answer: 'A', legalBasis: 'L', application: 'Ap', conclusion: 'C' },
+      tags: ['t'], source: { docId: 'd', heading: 'h' },
+    });
+    const mkBasic = (id: string): Card => ({
+      id, type: 'basic', front: 'f', back: 'b', tags: ['t'], source: { docId: 'd', heading: 'h' },
+    });
+    const cards = [mkHypo('h1'), mkHypo('h2'), mkHypo('h3'), mkBasic('b1'), mkBasic('b2')];
+    const q = buildQueue({
+      cards, states: new Map(),
+      newCardsPerDay: 50, newIntroducedToday: 0, now: NOW,
+    });
+    expect(q[0].type).toBe('basic');
+    expect(q[0].id).toBe('b1');
+    const basicPos = q.map((c) => c.id).indexOf('b2');
+    expect(basicPos).toBeGreaterThan(-1);
+    expect(q.filter((c) => c.type === 'hypo').map((c) => c.id)).toEqual(['h1', 'h2', 'h3']);
+  });
 });
