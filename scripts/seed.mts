@@ -73,4 +73,10 @@ await db.doc(`decks/${deckId}`).set({
 for (const c of cards) await db.doc(`decks/${deckId}/cards/${c.id}`).set(c);
 await db.doc(`users/${uid}/subscriptions/${deckId}`).set({ deckId, addedAt: now, newCardsPerDay: 15 });
 
+await db.doc(`users/${uid}/events/seed-recit`).set({
+  id: 'seed-recit', type: 'recit', subject: 'CIVIL PROCEDURE 1', title: 'Friday recit',
+  date: now + 3 * 24 * 60 * 60 * 1000,
+  coverage: { deckIds: [deckId], tags: ['jurisdiction'] },
+});
+
 console.log(`Seeded deck ${deckId} with ${cards.length} cards for uid ${uid}`);

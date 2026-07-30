@@ -1,10 +1,10 @@
 import {
-  collection, doc, getDoc, getDocs, query, where, writeBatch, serverTimestamp,
+  collection, doc, getDoc, getDocs, query, where, writeBatch, serverTimestamp, setDoc, deleteDoc,
 } from 'firebase/firestore';
 import { db } from './firebase';
 import { stateId } from './ids';
 import { startOfStudyDay, studyDay } from './scheduler';
-import type { Card, CardStateDoc, Deck, Grade, GradeExtras, SubscriptionDoc } from './types';
+import type { Card, CardStateDoc, Deck, EventDoc, Grade, GradeExtras, SubscriptionDoc } from './types';
 
 export async function fetchDecks(uid: string): Promise<Deck[]> {
   const snap = await getDocs(query(collection(db, 'decks'), where('ownerUid', '==', uid)));
@@ -53,4 +53,23 @@ export async function persistReview(
   if (extras?.aiVerdicts) log.aiVerdicts = extras.aiVerdicts;
   batch.set(doc(collection(db, 'users', uid, 'reviewLogs')), log);
   await batch.commit();
+}
+
+export async function fetchEvents(uid: string): Promise<EventDoc[]> {
+  const snap = await getDocs(collection(db, 'users', uid, 'events'));
+  return snap.docs.map((d) => d.data() as EventDoc).sort((a, b) => a.date - b.date);
+}
+
+export async function saveEvent(
+  uid: string, event: Omit<EventDoc, 'id'> & { id?: string },
+): Promise<string> {
+  const ref = event.id
+    ? doc(db, 'users', uid, 'events', event.id)
+    : doc(collection(db, 'users', uid, 'events'));
+  await setDoc(ref, { ...event, id: ref.id });
+  return ref.id;
+}
+
+export async function deleteEvent(uid: string, eventId: string): Promise<void> {
+  await deleteDoc(doc(db, 'users', uid, 'events', eventId));
 }

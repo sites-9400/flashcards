@@ -14,9 +14,12 @@ export default function Home() {
     <main className="max-w-xl mx-auto p-4">
       <header className="flex items-center justify-between mb-6">
         <h1 className="text-xl font-bold text-maroon">LawDeck</h1>
-        <button className="text-sm underline" onClick={() => void signOutUser()}>
-          {user?.displayName ?? 'account'}: sign out
-        </button>
+        <div>
+          <Link to="/events" className="text-sm underline mr-3">events</Link>
+          <button className="text-sm underline" onClick={() => void signOutUser()}>
+            {user?.displayName ?? 'account'}: sign out
+          </button>
+        </div>
       </header>
       {decks.length === 0 && <p className="text-sm opacity-70">No decks yet.</p>}
       <ul className="divide-y divide-gray-300/50">
