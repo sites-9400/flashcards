@@ -3,7 +3,7 @@ import {
 } from 'firebase/firestore';
 import { db } from './firebase';
 import { stateId } from './ids';
-import { studyDay } from './scheduler';
+import { startOfStudyDay, studyDay } from './scheduler';
 import type { Card, CardStateDoc, Deck, Grade, GradeExtras, SubscriptionDoc } from './types';
 
 export async function fetchDecks(uid: string): Promise<Deck[]> {
@@ -17,7 +17,11 @@ export async function fetchDeckBundle(uid: string, deckId: string) {
     getDocs(collection(db, 'decks', deckId, 'cards')),
     getDocs(query(collection(db, 'users', uid, 'cardStates'), where('deckId', '==', deckId))),
     getDoc(doc(db, 'users', uid, 'subscriptions', deckId)),
-    getDocs(query(collection(db, 'users', uid, 'reviewLogs'), where('deckId', '==', deckId))),
+    getDocs(query(
+      collection(db, 'users', uid, 'reviewLogs'),
+      where('deckId', '==', deckId),
+      where('ts', '>=', startOfStudyDay(new Date())),
+    )),
   ]);
   if (!deckSnap.exists()) throw new Error('deck-not-found');
   const deck = deckSnap.data() as Deck;

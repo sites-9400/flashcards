@@ -70,6 +70,12 @@ export function clampToEvents(state: CardStateDoc, eventDates: number[], now: Da
   return { ...state, due: Math.max(now.getTime(), dayBefore) };
 }
 
+export function startOfStudyDay(d: Date): number {
+  const s = new Date(d.getTime() - 4 * 60 * 60 * 1000);
+  const z = new Date(s.getFullYear(), s.getMonth(), s.getDate());
+  return z.getTime() + 4 * 60 * 60 * 1000;
+}
+
 export function studyDay(d: Date): string {
   const shifted = new Date(d.getTime() - 4 * 60 * 60 * 1000);
   const y = shifted.getFullYear();

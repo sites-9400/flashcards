@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   newCardState, applyReview, previewIntervals, clampToEvents, studyDay, retrievability,
+  startOfStudyDay,
 } from './scheduler';
 
 const NOW = new Date('2026-07-30T10:00:00+08:00');
@@ -43,6 +44,15 @@ describe('scheduler', () => {
   it('study day rolls over at 4am local', () => {
     expect(studyDay(new Date('2026-07-30T02:30:00+08:00'))).toBe('2026-07-29');
     expect(studyDay(new Date('2026-07-30T05:00:00+08:00'))).toBe('2026-07-30');
+  });
+
+  it('startOfStudyDay is the most recent 4am and agrees with studyDay', () => {
+    const before4 = new Date('2026-07-30T02:30:00+08:00');
+    const after4 = new Date('2026-07-30T05:00:00+08:00');
+    expect(studyDay(new Date(startOfStudyDay(before4)))).toBe(studyDay(before4));
+    expect(studyDay(new Date(startOfStudyDay(after4)))).toBe(studyDay(after4));
+    expect(new Date(startOfStudyDay(after4)).getHours()).toBe(4);
+    expect(startOfStudyDay(before4)).toBeLessThan(before4.getTime());
   });
 
   it('previews four labeled intervals', () => {
