@@ -7,6 +7,7 @@ import { applyReview, newCardState, previewIntervals } from '../lib/scheduler';
 import BasicClozeReview from '../components/BasicClozeReview';
 import McqReview from '../components/McqReview';
 import HypoReview from '../components/HypoReview';
+import { requestAiGrading } from '../lib/grade';
 import type { Card, CardStateDoc, Grade, GradeExtras } from '../lib/types';
 
 export default function Review() {
@@ -109,7 +110,7 @@ export default function Review() {
         <McqReview key={card.id + '-' + round} card={card} intervals={intervals} onGrade={grade} />
       )}
       {card.type === 'hypo' && intervals && (
-        <HypoReview key={card.id + '-' + round} card={card} intervals={intervals} onGrade={grade} />
+        <HypoReview key={card.id + '-' + round} card={card} intervals={intervals} onGrade={grade} aiCheck={requestAiGrading} />
       )}
     </main>
   );

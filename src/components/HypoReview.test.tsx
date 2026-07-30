@@ -52,3 +52,24 @@ it('shows provenance after full reveal', () => {
   expect(screen.getByText(/Venue of real actions lies/)).toBeInTheDocument();
   expect(screen.getByRole('link', { name: /case pdf/i })).toHaveAttribute('href', 'https://example.com/case.pdf');
 });
+
+it('AI check pre-fills marks but leaves them overridable', async () => {
+  const aiCheck = vi.fn().mockResolvedValue([
+    { beat: 'answer', verdict: 'got', reason: 'ok' },
+    { beat: 'legalBasis', verdict: 'partial', reason: 'no citation' },
+    { beat: 'application', verdict: 'got', reason: 'ok' },
+    { beat: 'conclusion', verdict: 'got', reason: 'ok' },
+  ]);
+  const onGrade = vi.fn();
+  render(<HypoReview card={card} intervals={intervals} onGrade={onGrade} aiCheck={aiCheck} />);
+  fireEvent.change(screen.getByRole('textbox'), { target: { value: 'answer' } });
+  revealAll();
+  fireEvent.click(screen.getByRole('button', { name: /AI check/i }));
+  await screen.findByText(/no citation/);
+  fireEvent.click(screen.getAllByRole('button', { name: 'Got it' })[1]);
+  fireEvent.click(screen.getByRole('button', { name: /Good/ }));
+  expect(onGrade).toHaveBeenCalledWith('good', expect.objectContaining({
+    typedAnswer: 'answer',
+    aiVerdicts: expect.any(Array),
+  }));
+});
