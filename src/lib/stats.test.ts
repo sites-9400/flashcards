@@ -1,6 +1,7 @@
 import { it, expect } from 'vitest';
 import {
   reviewsToday, streak, timeSpentTodayMs, dueForecast, trueRetention, weakSpots, inScope, eventReadiness,
+  isUpcoming,
 } from './stats';
 import { newCardState, studyDay } from './scheduler';
 import type { EventDoc, Grade } from './types';
@@ -84,6 +85,19 @@ it('inScope matches by deck or by tag', () => {
   expect(inScope('d1', ['x'], ev)).toBe(true);
   expect(inScope('d2', ['venue'], ev)).toBe(true);
   expect(inScope('d2', ['x'], ev)).toBe(false);
+});
+
+it('isUpcoming keeps an event visible through its own study day but hides a stale one', () => {
+  const ev = (date: number): EventDoc => ({
+    id: 'e1', type: 'recit', subject: 'CIVPRO', title: 'Recit', date,
+    coverage: { deckIds: [], tags: [] },
+  });
+  const todayMidnight = T('2026-07-30T00:00:00+08:00');
+  const yesterdayMidnight = T('2026-07-29T00:00:00+08:00');
+  const future = T('2026-08-02T00:00:00+08:00');
+  expect(isUpcoming(ev(todayMidnight), NOW)).toBe(true);
+  expect(isUpcoming(ev(yesterdayMidnight), NOW)).toBe(false);
+  expect(isUpcoming(ev(future), NOW)).toBe(true);
 });
 
 it('eventReadiness averages retrievability with unseen as zero', () => {

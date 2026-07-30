@@ -94,6 +94,15 @@ export function inScope(deckId: string, tags: string[], event: EventDoc): boolea
   return event.coverage.deckIds.includes(deckId) || tags.some((t) => event.coverage.tags.includes(t));
 }
 
+// Event dates are stored at local midnight, but startOfStudyDay is the 4am
+// boundary, so a same-day comparison against startOfStudyDay(now) would hide
+// an event from 4am onward on its own day. Backing the cutoff up by one day
+// keeps a same-day event visible through its whole study day while a
+// yesterday-dated event still drops off.
+export function isUpcoming(event: EventDoc, now: Date): boolean {
+  return event.date >= startOfStudyDay(now) - 24 * 60 * 60 * 1000;
+}
+
 export function eventReadiness(
   items: { deckId: string; cardId: string }[],
   states: Map<string, CardStateDoc>,

@@ -49,6 +49,7 @@ export default function Events() {
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!user) return;
+    if (!form.date) return;
     const [y, m, d] = form.date.split('-').map(Number);
     const date = new Date(y, m - 1, d).getTime();
     const tags = form.tags.split(',').map((t) => t.trim()).filter(Boolean);
@@ -75,7 +76,7 @@ export default function Events() {
       <form onSubmit={handleSubmit} className="flex flex-col gap-3 mb-8 border-b border-gray-300/50 pb-6">
         <label className="flex flex-col text-sm gap-1">
           Title
-          <input className="border rounded px-2 py-1" value={form.title}
+          <input className="border rounded px-2 py-1" value={form.title} required
             onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))} />
         </label>
         <label className="flex flex-col text-sm gap-1">
@@ -94,7 +95,7 @@ export default function Events() {
         </label>
         <label className="flex flex-col text-sm gap-1">
           Date
-          <input type="date" className="border rounded px-2 py-1" value={form.date}
+          <input type="date" className="border rounded px-2 py-1" value={form.date} required
             onChange={(e) => setForm((f) => ({ ...f, date: e.target.value }))} />
         </label>
         <fieldset className="text-sm">

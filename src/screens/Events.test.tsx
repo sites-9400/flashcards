@@ -13,7 +13,7 @@ vi.mock('../lib/data', () => ({
 import Events from './Events';
 import { saveEvent } from '../lib/data';
 
-afterEach(() => cleanup());
+afterEach(() => { cleanup(); vi.clearAllMocks(); });
 
 it('saves a parsed event from the form', async () => {
   render(<MemoryRouter><Events /></MemoryRouter>);
@@ -30,4 +30,13 @@ it('saves a parsed event from the form', async () => {
     date: new Date(2026, 7, 7).getTime(),
     coverage: { deckIds: ['d1'], tags: ['venue', 'docket-fees'] },
   }));
+});
+
+it('does not persist an event when the date field is left empty', async () => {
+  render(<MemoryRouter><Events /></MemoryRouter>);
+  await screen.findByLabelText(/Civ Pro/);
+  fireEvent.change(screen.getByLabelText(/title/i), { target: { value: 'Undated recit' } });
+  const form = screen.getByRole('button', { name: /save/i }).closest('form')!;
+  fireEvent.submit(form);
+  expect(saveEvent).not.toHaveBeenCalled();
 });

@@ -4,7 +4,7 @@ import {
 import { db } from './firebase';
 import { stateId } from './ids';
 import { startOfStudyDay, studyDay } from './scheduler';
-import { inScope, type LogLike } from './stats';
+import { inScope, isUpcoming, type LogLike } from './stats';
 import type { PrepItem } from './queue';
 import type { Card, CardStateDoc, Deck, EventDoc, Grade, GradeExtras, SubscriptionDoc } from './types';
 
@@ -139,7 +139,7 @@ export async function fetchHomeBundle(uid: string): Promise<{
     getDocs(collection(db, 'users', uid, 'cardStates')),
     fetchRecentLogs(uid, cutoff),
   ]);
-  const events = allEvents.filter((e) => e.date >= startOfStudyDay(now));
+  const events = allEvents.filter((e) => isUpcoming(e, now));
   const states = statesSnap.docs.map((d) => d.data() as CardStateDoc);
 
   // Decks worth reading cards for: any deck an upcoming event names directly
