@@ -30,9 +30,24 @@ service cloud.firestore {
       allow read, write: if false;
     }
 
-    match /users/{uid}/{document=**} {
+    // The user's own top-level profile doc (users/{uid} itself, no
+    // subcollection segment). Kept separate from the subcollection catch-all
+    // below because the collection-name exclusion there only applies to
+    // documents inside a named subcollection.
+    match /users/{uid} {
+      allow read, write: if request.auth != null && request.auth.uid == uid;
+    }
+
+    // Every subcollection under users/{uid} except gradingUsage (denied
+    // above). The {collection} segment is bound to a single path element, so
+    // it can be compared directly with != instead of indexing into a
+    // document-path list; that keeps this rule evaluable at list time, unlike
+    // the previous document.size()/document[0] form which the emulator
+    // rejects for list queries (getDocs) even though it evaluates fine for
+    // single-document get()s.
+    match /users/{uid}/{collection}/{rest=**} {
       allow read, write: if request.auth != null && request.auth.uid == uid
-        && !(document.size() > 0 && document[0] == 'gradingUsage');
+        && collection != 'gradingUsage';
     }
   }
 }

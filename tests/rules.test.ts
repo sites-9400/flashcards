@@ -3,7 +3,9 @@ import { readFileSync } from 'node:fs';
 import {
   initializeTestEnvironment, assertSucceeds, assertFails, type RulesTestEnvironment,
 } from '@firebase/rules-unit-testing';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
+import {
+  doc, getDoc, getDocs, setDoc, collection,
+} from 'firebase/firestore';
 
 let env: RulesTestEnvironment;
 
@@ -61,5 +63,35 @@ describe('gradingUsage rules', () => {
     const alice = env.authenticatedContext('alice').firestore();
     await assertFails(getDoc(doc(alice, 'users/alice/gradingUsage/2026-07-30')));
     await assertFails(setDoc(doc(alice, 'users/alice/gradingUsage/2026-07-30'), { count: 0 }));
+  });
+  it('owner cannot list their own daily grading-cap counters', async () => {
+    const alice = env.authenticatedContext('alice').firestore();
+    await assertFails(getDocs(collection(alice, 'users/alice/gradingUsage')));
+  });
+});
+
+describe('user subtree list queries (emulator list-time rule evaluation)', () => {
+  beforeAll(async () => {
+    await env.withSecurityRulesDisabled(async (ctx) => {
+      const db = ctx.firestore();
+      await setDoc(doc(db, 'users/alice/events/e1'), { title: 'Midterm' });
+      await setDoc(doc(db, 'users/alice/cardStates/pub_c1'), { due: 1 });
+      await setDoc(doc(db, 'users/bob/events/e1'), { title: 'Bob event' });
+    });
+  });
+
+  it('owner can list their own events', async () => {
+    const alice = env.authenticatedContext('alice').firestore();
+    await assertSucceeds(getDocs(collection(alice, 'users/alice/events')));
+  });
+
+  it('owner can list their own cardStates', async () => {
+    const alice = env.authenticatedContext('alice').firestore();
+    await assertSucceeds(getDocs(collection(alice, 'users/alice/cardStates')));
+  });
+
+  it('non-owner cannot list another user\'s events', async () => {
+    const bob = env.authenticatedContext('bob').firestore();
+    await assertFails(getDocs(collection(bob, 'users/alice/events')));
   });
 });
