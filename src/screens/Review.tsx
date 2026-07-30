@@ -6,6 +6,7 @@ import { buildQueue } from '../lib/queue';
 import { applyReview, newCardState, previewIntervals } from '../lib/scheduler';
 import BasicClozeReview from '../components/BasicClozeReview';
 import McqReview from '../components/McqReview';
+import HypoReview from '../components/HypoReview';
 import type { Card, CardStateDoc, Grade, GradeExtras } from '../lib/types';
 
 export default function Review() {
@@ -18,6 +19,7 @@ export default function Review() {
   const [status, setStatus] = useState<'loading' | 'ready' | 'error'>('loading');
   const [syncIssue, setSyncIssue] = useState(false);
   const [round, setRound] = useState(0);
+  const [skipHypos, setSkipHypos] = useState(false);
 
   useEffect(() => {
     if (!user) return;
@@ -29,16 +31,17 @@ export default function Review() {
       setStates(b.states);
       setPos(0);
       setQueue(buildQueue({
-        cards: b.cards.filter((c) => c.type === 'basic' || c.type === 'cloze' || c.type === 'mcq'),
+        cards: b.cards,
         states: b.states,
         newCardsPerDay: b.subscription?.newCardsPerDay ?? 15,
         newIntroducedToday: b.newIntroducedToday,
         now: new Date(),
+        skipHypos,
       }));
       setStatus('ready');
     }).catch(() => { if (!cancelled) setStatus('error'); });
     return () => { cancelled = true; };
-  }, [user, deckId]);
+  }, [user, deckId, skipHypos]);
 
   const card = queue[pos];
   const state = card ? states.get(card.id) : undefined;
@@ -89,6 +92,12 @@ export default function Review() {
       <header className="flex justify-between text-sm opacity-70">
         <Link to="/" className="underline">{title}</Link>
         <span>
+          <button
+            className={'underline mr-3 ' + (skipHypos ? 'text-maroon font-semibold' : '')}
+            onClick={() => setSkipHypos((s) => !s)}
+          >
+            {skipHypos ? 'hypos off' : 'skip hypos'}
+          </button>
           {syncIssue && <span className="text-maroon mr-2">sync pending</span>}
           {pos + 1} / {queue.length}
         </span>
@@ -99,10 +108,8 @@ export default function Review() {
       {card.type === 'mcq' && intervals && (
         <McqReview key={card.id + '-' + round} card={card} intervals={intervals} onGrade={grade} />
       )}
-      {card.type === 'hypo' && (
-        <div className="border border-mustard rounded-lg p-4 text-sm opacity-70">
-          HYPO cards arrive in the next milestone.
-        </div>
+      {card.type === 'hypo' && intervals && (
+        <HypoReview key={card.id + '-' + round} card={card} intervals={intervals} onGrade={grade} />
       )}
     </main>
   );
