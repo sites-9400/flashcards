@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
-  newCardState, applyReview, previewIntervals, clampToEvents, studyDay, retrievability,
-  startOfStudyDay,
+  newCardState, applyReview, applyReviewClamped, previewIntervals, clampToEvents, studyDay,
+  retrievability, startOfStudyDay,
 } from './scheduler';
 
 const NOW = new Date('2026-07-30T10:00:00+08:00');
@@ -39,6 +39,15 @@ describe('scheduler', () => {
     s = { ...s, due: NOW.getTime() + 2 * DAY, state: 'review' };
     const clamped = clampToEvents(s, [NOW.getTime() - DAY, NOW.getTime() + 6 * DAY], NOW);
     expect(clamped.due).toBe(NOW.getTime() + 2 * DAY);
+  });
+
+  it('applyReviewClamped never schedules past the day before an in-scope event', () => {
+    let s = { ...newCardState('d1', 'c1'), state: 'review' as const, stability: 60, difficulty: 5, reps: 4, lastReview: NOW.getTime() - 10 * DAY, due: NOW.getTime() };
+    const eventAt = NOW.getTime() + 3 * DAY;
+    const clamped = applyReviewClamped(s, 'easy', NOW, [eventAt]);
+    expect(clamped.due).toBeLessThanOrEqual(eventAt - DAY);
+    const unclamped = applyReviewClamped(s, 'easy', NOW, []);
+    expect(unclamped.due).toBeGreaterThan(eventAt - DAY);
   });
 
   it('study day rolls over at 4am local', () => {

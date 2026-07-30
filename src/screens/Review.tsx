@@ -1,14 +1,15 @@
 import { useEffect, useMemo, useState, useCallback } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useUser } from '../lib/auth';
-import { fetchDeckBundle, persistReview } from '../lib/data';
+import { fetchDeckBundle, fetchEvents, persistReview } from '../lib/data';
 import { buildQueue } from '../lib/queue';
-import { applyReview, newCardState, previewIntervals } from '../lib/scheduler';
+import { applyReviewClamped, newCardState, previewIntervals } from '../lib/scheduler';
+import { inScope } from '../lib/stats';
 import BasicClozeReview from '../components/BasicClozeReview';
 import McqReview from '../components/McqReview';
 import HypoReview from '../components/HypoReview';
 import { requestAiGrading } from '../lib/grade';
-import type { Card, CardStateDoc, Grade, GradeExtras } from '../lib/types';
+import type { Card, CardStateDoc, EventDoc, Grade, GradeExtras } from '../lib/types';
 
 export default function Review() {
   const { deckId = '' } = useParams();
@@ -21,16 +22,21 @@ export default function Review() {
   const [syncIssue, setSyncIssue] = useState(false);
   const [round, setRound] = useState(0);
   const [skipHypos, setSkipHypos] = useState(false);
+  const [events, setEvents] = useState<EventDoc[]>([]);
 
   useEffect(() => {
     if (!user) return;
     let cancelled = false;
     setStatus('loading');
-    void fetchDeckBundle(user.uid, deckId).then((b) => {
+    void Promise.all([
+      fetchDeckBundle(user.uid, deckId),
+      fetchEvents(user.uid),
+    ]).then(([b, evs]) => {
       if (cancelled) return;
       setTitle(b.deck.title);
       setStates(b.states);
       setPos(0);
+      setEvents(evs);
       setQueue(buildQueue({
         cards: b.cards,
         states: b.states,
@@ -57,7 +63,10 @@ export default function Review() {
   const grade = useCallback((g: Grade, extras?: GradeExtras) => {
     if (!card || !user) return;
     const prev = states.get(card.id);
-    const next = applyReview(prev ?? newCardState(deckId, card.id), g, new Date());
+    const dates = events
+      .filter((ev) => ev.date > Date.now() && inScope(deckId, card.tags, ev))
+      .map((ev) => ev.date);
+    const next = applyReviewClamped(prev ?? newCardState(deckId, card.id), g, new Date(), dates);
     void persistReview(user.uid, card, prev, next, g, extras).catch(() => setSyncIssue(true));
     setStates((m) => new Map(m).set(card.id, next));
     setRound((r) => r + 1);
@@ -66,7 +75,7 @@ export default function Review() {
     } else {
       setPos((p) => p + 1);
     }
-  }, [card, user, states, deckId, pos]);
+  }, [card, user, states, deckId, pos, events]);
 
   if (status === 'loading') return <p className="p-6 text-sm opacity-60">Loading...</p>;
 

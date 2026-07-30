@@ -61,6 +61,12 @@ export function applyReview(state: CardStateDoc, grade: Grade, now: Date): CardS
   return fromFsrs(state.deckId, state.cardId, card);
 }
 
+export function applyReviewClamped(
+  state: CardStateDoc, grade: Grade, now: Date, eventDates: number[],
+): CardStateDoc {
+  return clampToEvents(applyReview(state, grade, now), eventDates, now);
+}
+
 export function clampToEvents(state: CardStateDoc, eventDates: number[], now: Date): CardStateDoc {
   const future = eventDates.filter((d) => d > now.getTime());
   if (future.length === 0) return state;
