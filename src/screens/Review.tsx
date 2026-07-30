@@ -5,6 +5,7 @@ import { fetchDeckBundle, persistReview } from '../lib/data';
 import { buildQueue } from '../lib/queue';
 import { applyReview, newCardState, previewIntervals } from '../lib/scheduler';
 import BasicClozeReview from '../components/BasicClozeReview';
+import McqReview from '../components/McqReview';
 import type { Card, CardStateDoc, Grade, GradeExtras } from '../lib/types';
 
 export default function Review() {
@@ -28,7 +29,7 @@ export default function Review() {
       setStates(b.states);
       setPos(0);
       setQueue(buildQueue({
-        cards: b.cards.filter((c) => c.type === 'basic' || c.type === 'cloze'),
+        cards: b.cards.filter((c) => c.type === 'basic' || c.type === 'cloze' || c.type === 'mcq'),
         states: b.states,
         newCardsPerDay: b.subscription?.newCardsPerDay ?? 15,
         newIntroducedToday: b.newIntroducedToday,
@@ -95,9 +96,12 @@ export default function Review() {
       {(card.type === 'basic' || card.type === 'cloze') && intervals && (
         <BasicClozeReview key={card.id + '-' + round} card={card} intervals={intervals} onGrade={grade} />
       )}
-      {(card.type === 'mcq' || card.type === 'hypo') && (
-        <div key={card.id + '-' + round} className="border border-mustard rounded-lg p-4 text-sm opacity-70">
-          {card.type.toUpperCase()} cards arrive in the next milestone.
+      {card.type === 'mcq' && intervals && (
+        <McqReview key={card.id + '-' + round} card={card} intervals={intervals} onGrade={grade} />
+      )}
+      {card.type === 'hypo' && (
+        <div className="border border-mustard rounded-lg p-4 text-sm opacity-70">
+          HYPO cards arrive in the next milestone.
         </div>
       )}
     </main>
