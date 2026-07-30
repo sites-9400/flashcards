@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useUser, signOutUser } from '../lib/auth';
 import { fetchHomeBundle } from '../lib/data';
-import { studyDay } from '../lib/scheduler';
 import {
   streak, reviewsToday, timeSpentTodayMs, trueRetention, dueForecast, weakSpots, eventReadiness,
 } from '../lib/stats';
@@ -28,11 +27,10 @@ export default function Home() {
   const stateMap = new Map<string, CardStateDoc>();
   states.forEach((s) => stateMap.set(s.cardId, s));
 
-  // The strip's Retention tile reads today's slice of the already-fetched
-  // 30-day `logs` array (no separate query), same day-scoping as
-  // reviewsToday, so it reflects the studying just done today.
-  const todayLogs = logs.filter((l) => studyDay(new Date(l.ts)) === studyDay(now));
-  const retention = trueRetention(todayLogs);
+  // The strip's Retention tile reads the full fetched 30-day `logs` window,
+  // consistent with the per-deck retention rows below (Streak/Today/Time
+  // stay today-scoped by design).
+  const retention = trueRetention(logs);
   const forecast = dueForecast(states, now, 7);
   const weakList = weakSpots(logs);
   const topWeak = weakList.slice(0, 3);

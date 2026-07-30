@@ -36,7 +36,9 @@ it('renders strip, due badge, event row, and weak link from the bundle', async (
   expect(await screen.findByText(/Friday recit/)).toBeInTheDocument();
   expect(screen.getByText(/2 days?/)).toBeInTheDocument();
   expect(screen.getByText(/5 reviews/)).toBeInTheDocument();
-  expect(screen.getByText(/80%/)).toBeInTheDocument();
+  // Both the Retention tile and the per-deck retention row now read the
+  // same full 30-day logs window, so they agree at 83% and both match.
+  expect(screen.getAllByText(/83%/)).toHaveLength(2);
   expect(screen.getByText(/1 due/)).toBeInTheDocument();
   expect(screen.getByText(/2 in scope/)).toBeInTheDocument();
   expect(screen.getByRole('link', { name: /prepare/i })).toBeInTheDocument();
