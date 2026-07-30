@@ -28,20 +28,13 @@ All 10 tasks complete; final whole-branch review (8f3e871..69c0b6e) verdict: **W
 
 **On-device check:** sign-in is popup-only (src/lib/auth.tsx); popup OAuth inside an installed iOS PWA is historically unreliable and installed-app storage is isolated. When verifying Add to Home Screen, explicitly test Google sign-in inside the installed app; fall back to `signInWithRedirect` if it fails.
 
-## Pending user ops (gates first green deploy)
+## Ops: DONE 2026-07-30
 
-Run in a terminal, in order:
+gh auth (sites-9400), the four VITE_FB_* repo variables, and `firebase init hosting:github` (secret FIREBASE_SERVICE_ACCOUNT_FLASHCARDS_BE310) are all set. Two CI-environment fixes were needed for the first green deploy: workflow Node 20 -> 24 (undici markAsUncloneable crash) and vitest `env: { TZ: 'Asia/Manila' }` (studyDay tests assert Manila-local rollover; CI runs UTC).
 
-```
-gh auth login
-npx firebase init hosting:github   # repo sites-9400/flashcards, workflow overwrite NO (keep ours), no PR workflow
-gh variable set VITE_FB_API_KEY -R sites-9400/flashcards -b "AIzaSyDb8ACKIV6VRJ4zArCAdox02OYwD48hY_Q"
-gh variable set VITE_FB_AUTH_DOMAIN -R sites-9400/flashcards -b "flashcards-be310.firebaseapp.com"
-gh variable set VITE_FB_PROJECT_ID -R sites-9400/flashcards -b "flashcards-be310"
-gh variable set VITE_FB_APP_ID -R sites-9400/flashcards -b "1:30911096236:web:961df37c7bcde9d449c609"
-```
+**Live URL: https://flashcards-be310.web.app** (deploy green, site verified serving).
 
-Then re-run the failed GitHub Actions deploy (push or "Re-run all jobs"), verify live-URL Google sign-in, and do the phone Add to Home Screen check (see popup-OAuth note above).
+Still on the user: on the phone, verify Google sign-in on the live URL, Add to Home Screen, then sign-in INSIDE the installed app (see popup-OAuth note above). Optional: revoke the Firebase CLI GitHub OAuth app at https://github.com/settings/connections/applications/89cf50f02ac6aaed3484.
 
 ## Next plans (write from docs/spec.md via superpowers:writing-plans)
 
