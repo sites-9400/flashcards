@@ -44,11 +44,16 @@ export interface CardStateDoc {
   learningSteps: number;
 }
 
+export type BeatKey = 'answer' | 'legalBasis' | 'application' | 'conclusion';
+export type BeatVerdict = 'got' | 'partial' | 'missed';
+export interface AiVerdict { beat: BeatKey; verdict: BeatVerdict; reason: string }
+export interface GradeExtras { typedAnswer?: string; aiVerdicts?: AiVerdict[] }
+
 export interface ReviewLogDoc {
   cardId: string; deckId: string; grade: Grade; tags: string[]; ts: number;
   firstReview?: boolean;
   typedAnswer?: string;
-  aiVerdicts?: Array<{ beat: 'answer' | 'legalBasis' | 'application' | 'conclusion'; verdict: 'got' | 'partial' | 'missed'; reason: string }>;
+  aiVerdicts?: AiVerdict[];
 }
 
 export interface EventDoc {

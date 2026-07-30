@@ -4,7 +4,7 @@ import {
 import { db } from './firebase';
 import { stateId } from './ids';
 import { studyDay } from './scheduler';
-import type { Card, CardStateDoc, Deck, Grade, SubscriptionDoc } from './types';
+import type { Card, CardStateDoc, Deck, Grade, GradeExtras, SubscriptionDoc } from './types';
 
 export async function fetchDecks(uid: string): Promise<Deck[]> {
   const snap = await getDocs(query(collection(db, 'decks'), where('ownerUid', '==', uid)));
@@ -36,13 +36,17 @@ export async function fetchDeckBundle(uid: string, deckId: string) {
 }
 
 export async function persistReview(
-  uid: string, card: Card, prev: CardStateDoc | undefined, next: CardStateDoc, grade: Grade,
+  uid: string, card: Card, prev: CardStateDoc | undefined, next: CardStateDoc,
+  grade: Grade, extras?: GradeExtras,
 ): Promise<void> {
   const batch = writeBatch(db);
   batch.set(doc(db, 'users', uid, 'cardStates', stateId(next.deckId, next.cardId)), next);
-  batch.set(doc(collection(db, 'users', uid, 'reviewLogs')), {
+  const log: Record<string, unknown> = {
     cardId: next.cardId, deckId: next.deckId, grade, tags: card.tags,
     ts: Date.now(), firstReview: prev === undefined, createdAt: serverTimestamp(),
-  });
+  };
+  if (extras?.typedAnswer) log.typedAnswer = extras.typedAnswer;
+  if (extras?.aiVerdicts) log.aiVerdicts = extras.aiVerdicts;
+  batch.set(doc(collection(db, 'users', uid, 'reviewLogs')), log);
   await batch.commit();
 }

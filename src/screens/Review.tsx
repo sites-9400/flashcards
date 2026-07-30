@@ -4,9 +4,8 @@ import { useUser } from '../lib/auth';
 import { fetchDeckBundle, persistReview } from '../lib/data';
 import { buildQueue } from '../lib/queue';
 import { applyReview, newCardState, previewIntervals } from '../lib/scheduler';
-import CardView from '../components/CardView';
-import GradeBar from '../components/GradeBar';
-import type { Card, CardStateDoc, Grade } from '../lib/types';
+import BasicClozeReview from '../components/BasicClozeReview';
+import type { Card, CardStateDoc, Grade, GradeExtras } from '../lib/types';
 
 export default function Review() {
   const { deckId = '' } = useParams();
@@ -14,16 +13,19 @@ export default function Review() {
   const [queue, setQueue] = useState<Card[]>([]);
   const [states, setStates] = useState<Map<string, CardStateDoc>>(new Map());
   const [pos, setPos] = useState(0);
-  const [revealed, setRevealed] = useState(false);
   const [title, setTitle] = useState('');
   const [status, setStatus] = useState<'loading' | 'ready' | 'error'>('loading');
+  const [syncIssue, setSyncIssue] = useState(false);
 
   useEffect(() => {
     if (!user) return;
+    let cancelled = false;
     setStatus('loading');
     void fetchDeckBundle(user.uid, deckId).then((b) => {
+      if (cancelled) return;
       setTitle(b.deck.title);
       setStates(b.states);
+      setPos(0);
       setQueue(buildQueue({
         cards: b.cards.filter((c) => c.type === 'basic' || c.type === 'cloze'),
         states: b.states,
@@ -32,7 +34,8 @@ export default function Review() {
         now: new Date(),
       }));
       setStatus('ready');
-    }).catch(() => setStatus('error'));
+    }).catch(() => { if (!cancelled) setStatus('error'); });
+    return () => { cancelled = true; };
   }, [user, deckId]);
 
   const card = queue[pos];
@@ -42,29 +45,21 @@ export default function Review() {
     [card, state, deckId],
   );
 
-  const grade = useCallback((g: Grade) => {
+  // Re-entrancy: unreachable via normal input. React 18 flushes state updates
+  // before the next discrete event and the grading UI unmounts after each
+  // grade, so key repeat or double click cannot double-grade a card.
+  const grade = useCallback((g: Grade, extras?: GradeExtras) => {
     if (!card || !user) return;
     const prev = states.get(card.id);
     const next = applyReview(prev ?? newCardState(deckId, card.id), g, new Date());
-    void persistReview(user.uid, card, prev, next, g);
+    persistReview(user.uid, card, prev, next, g, extras).catch(() => setSyncIssue(true));
     setStates((m) => new Map(m).set(card.id, next));
-    setRevealed(false);
     if (g === 'again') {
       setQueue((q) => [...q.slice(0, pos), ...q.slice(pos + 1), card]);
     } else {
       setPos((p) => p + 1);
     }
   }, [card, user, states, deckId, pos]);
-
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (e.code === 'Space') { e.preventDefault(); setRevealed(true); }
-      const map: Record<string, Grade> = { Digit1: 'again', Digit2: 'hard', Digit3: 'good', Digit4: 'easy' };
-      if (revealed && map[e.code]) grade(map[e.code]);
-    };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [revealed, grade]);
 
   if (status === 'loading') return <p className="p-6 text-sm opacity-60">Loading...</p>;
 
@@ -90,13 +85,19 @@ export default function Review() {
     <main className="max-w-xl mx-auto p-4 flex flex-col gap-4">
       <header className="flex justify-between text-sm opacity-70">
         <Link to="/" className="underline">{title}</Link>
-        <span>{pos + 1} / {queue.length}</span>
+        <span>
+          {syncIssue && <span className="text-maroon mr-2">sync pending</span>}
+          {pos + 1} / {queue.length}
+        </span>
       </header>
-      <div onClick={() => setRevealed(true)}>
-        <CardView card={card} revealed={revealed} />
-        {!revealed && <p className="text-center text-sm opacity-50 mt-3">tap or press space to reveal</p>}
-      </div>
-      {revealed && intervals && <GradeBar intervals={intervals} onGrade={grade} />}
+      {(card.type === 'basic' || card.type === 'cloze') && intervals && (
+        <BasicClozeReview card={card} intervals={intervals} onGrade={grade} />
+      )}
+      {(card.type === 'mcq' || card.type === 'hypo') && (
+        <div className="border border-mustard rounded-lg p-4 text-sm opacity-70">
+          {card.type.toUpperCase()} cards arrive in the next milestone.
+        </div>
+      )}
     </main>
   );
 }
