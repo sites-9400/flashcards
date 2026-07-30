@@ -25,7 +25,7 @@ All ledger deferrals were triaged FINE-TO-DEFER by the final review. Highlights 
 **Whenever functions/ is next touched:** verdictsSchema one-verdict-per-beat refine (carried from Plan 2).
 
 **Ops (carry-forward list):**
-- **PENDING USER ACTION: `firebase deploy --only firestore:rules`.** CI deploys hosting only, so production still runs the pre-8.5 rules. Production is safe either way (the rewrite is semantics-preserving; the bug is emulator-only), but repo and deployed rules should not stay divergent.
+- DONE 2026-07-31: `firebase deploy --only firestore:rules` ran successfully; repo and deployed rules in sync. Reminder: CI deploys hosting only, so any future rules edit needs the same manual deploy.
 - Carried from Plan 2: Artifact Registry cleanup policy; CI rules-test job (setup-java + npm run test:rules); firebase-tools as devDependency; deploy concurrency group; ANTHROPIC_API_KEY rotation prefix check.
 
 **Known pre-existing (documented, not a regression):** a nested collection literally named gradingUsage (for example users/{uid}/events/e1/gradingUsage/x) is not covered by the deny block under either the old or new rules; revisit only if such a collection ever exists.
