@@ -28,5 +28,7 @@ export default defineConfig({
     environment: 'jsdom',
     setupFiles: ['./src/test/setup.ts'],
     exclude: [...configDefaults.exclude, 'tests/**'],
+    // studyDay() is local-time by design; tests assert Manila-local rollover
+    env: { TZ: 'Asia/Manila' },
   },
 });
