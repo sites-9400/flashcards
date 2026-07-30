@@ -19,6 +19,7 @@ export async function fetchDeckBundle(uid: string, deckId: string) {
     getDoc(doc(db, 'users', uid, 'subscriptions', deckId)),
     getDocs(query(collection(db, 'users', uid, 'reviewLogs'), where('deckId', '==', deckId))),
   ]);
+  if (!deckSnap.exists()) throw new Error('deck-not-found');
   const deck = deckSnap.data() as Deck;
   const cards = cardsSnap.docs.map((d) => d.data() as Card);
   const states = new Map<string, CardStateDoc>();

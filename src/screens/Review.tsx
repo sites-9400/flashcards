@@ -16,9 +16,11 @@ export default function Review() {
   const [pos, setPos] = useState(0);
   const [revealed, setRevealed] = useState(false);
   const [title, setTitle] = useState('');
+  const [status, setStatus] = useState<'loading' | 'ready' | 'error'>('loading');
 
   useEffect(() => {
     if (!user) return;
+    setStatus('loading');
     void fetchDeckBundle(user.uid, deckId).then((b) => {
       setTitle(b.deck.title);
       setStates(b.states);
@@ -29,7 +31,8 @@ export default function Review() {
         newIntroducedToday: b.newIntroducedToday,
         now: new Date(),
       }));
-    });
+      setStatus('ready');
+    }).catch(() => setStatus('error'));
   }, [user, deckId]);
 
   const card = queue[pos];
@@ -62,6 +65,17 @@ export default function Review() {
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, [revealed, grade]);
+
+  if (status === 'loading') return <p className="p-6 text-sm opacity-60">Loading...</p>;
+
+  if (status === 'error') {
+    return (
+      <main className="max-w-xl mx-auto p-4">
+        <p className="mb-4">This deck could not be loaded. It may have been removed.</p>
+        <Link className="underline text-maroon" to="/">Back to decks</Link>
+      </main>
+    );
+  }
 
   if (!card) {
     return (
