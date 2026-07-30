@@ -41,6 +41,7 @@ export interface CardStateDoc {
   reps: number; lapses: number;
   state: 'new' | 'learning' | 'review' | 'relearning';
   lastReview: number | null;
+  learningSteps: number;
 }
 
 export interface ReviewLogDoc {

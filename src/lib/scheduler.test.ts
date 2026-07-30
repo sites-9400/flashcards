@@ -58,4 +58,21 @@ describe('scheduler', () => {
     expect(r).toBeGreaterThan(0);
     expect(r).toBeLessThanOrEqual(1);
   });
+
+  it('stays in learning after good-again-good, with a short due', () => {
+    let s = newCardState('d1', 'c1');
+    s = applyReview(s, 'good', NOW);
+    s = applyReview(s, 'again', new Date(NOW.getTime() + 2 * 60 * 1000));
+    s = applyReview(s, 'good', new Date(NOW.getTime() + 4 * 60 * 1000));
+    expect(s.state).toBe('learning');
+    expect(s.due - (NOW.getTime() + 4 * 60 * 1000)).toBeLessThan(60 * 60 * 1000);
+  });
+
+  it('stays in learning after three consecutive again ratings', () => {
+    let s = newCardState('d1', 'c1');
+    let t = NOW.getTime();
+    for (let i = 0; i < 3; i++) { s = applyReview(s, 'again', new Date(t)); t += 2 * 60 * 1000; }
+    expect(s.state).toBe('learning');
+    expect(s.due - t).toBeLessThan(60 * 60 * 1000);
+  });
 });

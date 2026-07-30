@@ -21,21 +21,14 @@ const STR_TO_STATE: Record<CardStateDoc['state'], State> = {
 };
 
 function toFsrs(s: CardStateDoc): FsrsCard {
-  // ts-fsrs v5 added a `learning_steps` field to Card that tracks progress
-  // through the configurable learning-step array. CardStateDoc (fixed by
-  // Task 3) has no slot for it, so it cannot be persisted directly. While
-  // the card is mid-learning, its step index tracks 1:1 with `reps` counted
-  // since entering the New/Learning phase (each non-terminal review advances
-  // one step); reconstruct it from `reps` rather than always resetting to 0,
-  // which would trap the card on the first learning step forever.
-  const learningSteps = s.state === 'learning' ? s.reps : 0;
   return {
     due: new Date(s.due),
     stability: s.stability,
     difficulty: s.difficulty,
     elapsed_days: s.elapsedDays,
     scheduled_days: s.scheduledDays,
-    learning_steps: learningSteps,
+    // `?? 0` guards CardStateDoc records written before this field existed.
+    learning_steps: s.learningSteps ?? 0,
     reps: s.reps,
     lapses: s.lapses,
     state: STR_TO_STATE[s.state],
@@ -55,6 +48,7 @@ function fromFsrs(deckId: string, cardId: string, c: FsrsCard): CardStateDoc {
     lapses: c.lapses,
     state: STATE_TO_STR[c.state],
     lastReview: c.last_review ? c.last_review.getTime() : null,
+    learningSteps: c.learning_steps,
   };
 }
 
