@@ -1,6 +1,7 @@
 import type { CardType } from './types';
 
-// FNV-1a 32-bit, hex output; stable across runs and platforms.
+// FNV-1a 32-bit, base-36 output; stable across runs and platforms.
+// The cardId concatenates two variable-length base-36 hashes (1-7 chars each), so halves are not fixed-width.
 function fnv1a(input: string): string {
   let h = 0x811c9dc5;
   for (let i = 0; i < input.length; i++) {
