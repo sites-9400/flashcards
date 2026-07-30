@@ -16,9 +16,10 @@ Sign in: the app only offers Google popup sign in, which Playwright cannot
 drive. Per the Task 6 precedent, `src/lib/auth.tsx`'s `signIn` export was
 temporarily swapped to `signInWithEmailAndPassword` against the auth emulator
 for this walk only, then reverted with `git checkout -- src/lib/auth.tsx`
-before anything was committed. Confirmed reverted and the tree clean with
-`git status` immediately before staging this file (see Revert verification
-below); the patch was never part of any commit.
+before anything was committed. Confirmed reverted with `git status`
+immediately after the revert, and confirmed again immediately before staging
+this file (see Revert verification below, both snapshots shown); the patch
+was never part of any commit.
 
 Screenshots below live in
 `.superpowers/sdd/2026-07-30-lawdeck-plan-3-events-stats/screenshots/`.
@@ -90,15 +91,39 @@ Screenshots below live in
    card was already near full retrievability), graded the basic card Good
    (queue advanced to "3 / 5", readiness still 100% for the same reason), then
    stopped mid session on the hypo card (typed nothing further; not graded).
-   Weakest first ordering could not be visually distinguished by eye at this
-   resolution (all cards were reviewed within the same few minutes so their
-   retrievabilities were all close to 1), but the queue advanced deterministically
-   card by card as expected and readiness recomputed live from the full in
-   scope set after each grade, matching `buildPrepQueue`'s and
-   `eventReadiness`'s unit test coverage (Task 6's `queue.test.ts` proves the
-   ordering property directly with fixtures that force separated
-   retrievabilities; this walk exercises the live wiring, not the ordering
-   math itself).
+   In this first pass, weakest first ordering could not be visually
+   distinguished by eye at this resolution, since all cards had been
+   reviewed within the same few minutes and so had near identical, near
+   maximal retrievability.
+
+   **Follow up live confirmation (fix round).** To force separated
+   retrievabilities and directly observe the ordering, restarted the
+   emulators and reseeded with a fresh test user (same procedure as above,
+   including a temporary auth.tsx patch, reverted after), reviewed only 2 of
+   the 5 seed cards (mcq graded Good, basic graded Good) so 3 cards
+   (cloze 1, cloze 2, hypo) stayed unseen, then backdated the mcq card's
+   cardState `lastReview` by 25 days via a direct PATCH against the
+   Firestore emulator REST endpoint (`.../cardStates/civpro-1_138v9m91h8g3kl?
+   updateMask.fieldPaths=lastReview`), leaving the basic card's `lastReview`
+   at its real, just-reviewed timestamp. This made the mcq card the single
+   weakest seen card (near zero retrievability after 25 days against a
+   post-first-review stability of 2.3065) while the basic card stayed near
+   full retrievability, with the 3 untouched cards still unseen.
+
+   Opened `/prep/seed-recit`: header read "readiness 34%: 1 / 5" (the drop
+   from the first pass's 100% reflects the 3 unseen cards at 0 plus the
+   backdated card averaged in). Advanced through the queue one grade at a
+   time: position 1/5 was cloze 1 (unseen), 2/5 was cloze 2 (unseen), 3/5
+   was the hypo card (unseen), confirming all 3 unseen cards led in their
+   original order; position 4/5 was the backdated mcq card
+   (`task9-09-prep-weakest-first-confirmed.png`, readiness 94% at that
+   point, queue text "4 / 5"), confirming the weakest seen card is ordered
+   ahead of the stronger one; position 5/5 was the basic card, the untouched
+   recent one (`task9-10-prep-order-final-card.png`, readiness 100% after
+   grading the mcq card, queue text "5 / 5"). Observed order: unseen
+   (original order) then weakest seen then strongest seen, exactly matching
+   `buildPrepQueue`'s specified semantics, now confirmed live end to end
+   rather than only by unit test fixture.
 
 6. **Weak Topics screen** (`task9-08-weak-topics.png`). Opened `/weak`
    directly; listed one row: "jurisdiction, 40% fail, 5 attempts", matching
@@ -178,10 +203,11 @@ bearer token):
 - **Clamp verified live against a seeded event:** completed, see Clamp
   verification above, exact `event.date - 1 day` equality observed.
 - **Prep ordering weakest first:** covered by unit tests with fixtures that
-  force separated retrievabilities (`src/lib/queue.test.ts`, Task 6); the
-  live walk exercised the same code path end to end but could not visually
-  distinguish ordering since all seed cards had near identical, near maximal
-  retrievability at walk time (all reviewed within the same few minutes).
+  force separated retrievabilities (`src/lib/queue.test.ts`, Task 6), and now
+  also confirmed live in a follow up pass (see the Prep session entry above)
+  with a deliberately backdated cardState: observed order was unseen cards
+  first in original order, then the weakest seen card, then the strongest
+  seen card, exactly matching the specified semantics.
 - **Stats strip numbers move correctly across a session:** confirmed live;
   Streak 0 to 1, Today 0 to 7, Time 0 to 3 min, Retention n/a to 100%, weak
   topics 0 to 1 row, event readiness 0% to 100%, all matching hand computed
@@ -210,15 +236,38 @@ bearer token):
 
 ## Revert verification
 
+**Correction (added in the follow up amendment commit):** the original
+version of this section captioned a `git status` snapshot as "immediately
+before staging this notes file" when it was actually captured earlier, right
+after the `auth.tsx` revert and before this notes file existed. That was a
+mislabeling, not a fabrication: the output shown was real, just taken at the
+wrong moment for the caption it was given. Both correctly labeled snapshots
+are below.
+
 `git checkout -- src/lib/auth.tsx` was run immediately after the emulator
 walk, before any other file was touched for this task. `git status`
-immediately before staging this notes file:
+immediately after that revert, before this notes file was written:
 
 ```
 On branch main
 Your branch is up to date with 'origin/main'.
 
 nothing to commit, working tree clean
+```
+
+This confirms the revert left the tree clean with nothing else outstanding.
+`git status` again, immediately before staging this notes file (after the
+file was written and the full suite/tsc/build ship checks had run):
+
+```
+On branch main
+Your branch is up to date with 'origin/main'.
+
+Untracked files:
+  (use "git add <file>..." to include in what will be committed)
+	docs/plan-3-notes.md
+
+nothing added to commit but untracked files present (use "git add" to track)
 ```
 
 The only file staged and committed for Task 9 is this one,
