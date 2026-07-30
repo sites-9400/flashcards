@@ -1,6 +1,19 @@
 import type { Card, CardStateDoc } from './types';
 
 const HYPO_COST = 3;
+export const MAX_SESSION_HYPOS = 3;
+
+function interleaveHypos(cards: Card[]): Card[] {
+  const hypos = cards.filter((c) => c.type === 'hypo').slice(0, MAX_SESSION_HYPOS);
+  const others: Card[] = cards.filter((c) => c.type !== 'hypo');
+  if (hypos.length === 0) return others;
+  const out = [...others];
+  hypos.forEach((h, i) => {
+    const pos = Math.round(((i + 1) * others.length) / (hypos.length + 1)) + i;
+    out.splice(Math.min(pos, out.length), 0, h);
+  });
+  return out;
+}
 
 export function buildQueue(args: {
   cards: Card[];
@@ -26,5 +39,5 @@ export function buildQueue(args: {
     budget -= cost;
     newCards.push(c);
   }
-  return [...dueCards, ...newCards];
+  return interleaveHypos([...dueCards, ...newCards]);
 }

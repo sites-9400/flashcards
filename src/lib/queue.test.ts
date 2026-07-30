@@ -69,4 +69,37 @@ describe('buildQueue', () => {
     });
     expect(q.map((c) => c.id)).toEqual(['b1']);
   });
+
+  it('caps hypos at MAX_SESSION_HYPOS per session', () => {
+    const mkHypo = (id: string): Card => ({
+      id, type: 'hypo', facts: 'F', question: 'Q',
+      alac: { answer: 'A', legalBasis: 'L', application: 'Ap', conclusion: 'C' },
+      tags: ['t'], source: { docId: 'd', heading: 'h' },
+    });
+    const hypos = ['h1', 'h2', 'h3', 'h4', 'h5'].map(mkHypo);
+    const q = buildQueue({
+      cards: hypos, states: new Map(),
+      newCardsPerDay: 50, newIntroducedToday: 0, now: NOW,
+    });
+    expect(q.filter((c) => c.type === 'hypo').length).toBe(3);
+  });
+
+  it('interleaves hypos through the queue instead of clumping them', () => {
+    const mkBasic = (id: string): Card => ({
+      id, type: 'basic', front: 'f', back: 'b', tags: ['t'], source: { docId: 'd', heading: 'h' },
+    });
+    const hypo: Card = {
+      id: 'h1', type: 'hypo', facts: 'F', question: 'Q',
+      alac: { answer: 'A', legalBasis: 'L', application: 'Ap', conclusion: 'C' },
+      tags: ['t'], source: { docId: 'd', heading: 'h' },
+    };
+    const cards = [hypo, ...['b1', 'b2', 'b3', 'b4'].map(mkBasic)];
+    const q = buildQueue({
+      cards, states: new Map(),
+      newCardsPerDay: 50, newIntroducedToday: 0, now: NOW,
+    });
+    const hypoPos = q.findIndex((c) => c.id === 'h1');
+    expect(hypoPos).toBeGreaterThan(0);
+    expect(q.length).toBe(5);
+  });
 });
