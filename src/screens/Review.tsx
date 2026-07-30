@@ -73,12 +73,12 @@ export default function Review() {
   }
 
   return (
-    <main className="max-w-xl mx-auto p-4 flex flex-col gap-4 min-h-dvh">
+    <main className="max-w-xl mx-auto p-4 flex flex-col gap-4">
       <header className="flex justify-between text-sm opacity-70">
         <Link to="/" className="underline">{title}</Link>
         <span>{pos + 1} / {queue.length}</span>
       </header>
-      <div className="flex-1" onClick={() => setRevealed(true)}>
+      <div onClick={() => setRevealed(true)}>
         <CardView card={card} revealed={revealed} />
         {!revealed && <p className="text-center text-sm opacity-50 mt-3">tap or press space to reveal</p>}
       </div>
