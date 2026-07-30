@@ -41,3 +41,17 @@ it('selects a choice with number keys', () => {
   fireEvent.keyDown(window, { code: 'Digit2' });
   expect(screen.getByText(/Real actions are filed/)).toBeInTheDocument();
 });
+
+it('grades with keyboard after answering: Enter on wrong, Digit4 on right', () => {
+  const onGrade = vi.fn();
+  const { unmount } = render(<McqReview card={card} intervals={intervals} onGrade={onGrade} />);
+  fireEvent.keyDown(window, { code: 'Digit3' });
+  fireEvent.keyDown(window, { code: 'Enter' });
+  expect(onGrade).toHaveBeenCalledWith('again');
+  unmount();
+  const onGrade2 = vi.fn();
+  render(<McqReview card={card} intervals={intervals} onGrade={onGrade2} />);
+  fireEvent.keyDown(window, { code: 'Digit2' });
+  fireEvent.keyDown(window, { code: 'Digit4' });
+  expect(onGrade2).toHaveBeenCalledWith('easy');
+});

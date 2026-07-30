@@ -40,7 +40,8 @@ it('returns null on a malformed response', async () => {
 });
 
 it('returns null when offline', async () => {
-  vi.spyOn(navigator, 'onLine', 'get').mockReturnValue(false);
+  const spy = vi.spyOn(navigator, 'onLine', 'get').mockReturnValue(false);
   expect(await requestAiGrading('my answer', card)).toBeNull();
   expect(httpsCallableMock).not.toHaveBeenCalled();
+  spy.mockRestore();
 });

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import GradeBar from './GradeBar';
 import { BEATS, beatScore, suggestedGrade } from '../lib/alac';
 import type { AiVerdict, BeatKey, BeatVerdict, Grade, GradeExtras, HypoCard } from '../lib/types';
@@ -39,12 +39,20 @@ export default function HypoReview({ card, intervals, onGrade, aiCheck }: {
     }
   };
 
-  const confirm = (g: Grade) => {
+  const confirm = useCallback((g: Grade) => {
     const extras: GradeExtras = {};
     if (typed.trim()) extras.typedAnswer = typed.trim();
     if (verdicts) extras.aiVerdicts = verdicts;
     onGrade(g, Object.keys(extras).length ? extras : undefined);
-  };
+  }, [typed, verdicts, onGrade]);
+
+  useEffect(() => {
+    if (!allMarked) return;
+    const map: Record<string, Grade> = { Digit1: 'again', Digit2: 'hard', Digit3: 'good', Digit4: 'easy' };
+    const onKey = (e: KeyboardEvent) => { if (map[e.code]) confirm(map[e.code]); };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [allMarked, confirm]);
 
   return (
     <div className="flex flex-col gap-4">

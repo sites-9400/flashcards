@@ -73,3 +73,23 @@ it('AI check pre-fills marks but leaves them overridable', async () => {
     aiVerdicts: expect.any(Array),
   }));
 });
+
+it('confirms with no extras when nothing was typed and no AI ran', () => {
+  const onGrade = vi.fn();
+  render(<HypoReview card={card} intervals={intervals} onGrade={onGrade} />);
+  revealAll();
+  screen.getAllByRole('button', { name: 'Got it' }).forEach((b) => fireEvent.click(b));
+  fireEvent.click(screen.getByRole('button', { name: /Good/ }));
+  expect(onGrade).toHaveBeenCalledWith('good', undefined);
+});
+
+it('grades with number keys once all beats are marked', () => {
+  const onGrade = vi.fn();
+  render(<HypoReview card={card} intervals={intervals} onGrade={onGrade} />);
+  fireEvent.keyDown(window, { code: 'Digit3' });
+  expect(onGrade).not.toHaveBeenCalled();
+  revealAll();
+  screen.getAllByRole('button', { name: 'Got it' }).forEach((b) => fireEvent.click(b));
+  fireEvent.keyDown(window, { code: 'Digit3' });
+  expect(onGrade).toHaveBeenCalledWith('good', undefined);
+});

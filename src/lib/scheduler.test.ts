@@ -80,6 +80,8 @@ describe('scheduler', () => {
     let s = newCardState('d1', 'c1');
     s = applyReview(s, 'hard', NOW);
     s = applyReview(s, 'hard', new Date(NOW.getTime() + 10 * 60 * 1000));
+    const mid = s;
+    expect(typeof mid.learningSteps).toBe('number');
     s = applyReview(s, 'good', new Date(NOW.getTime() + 20 * 60 * 1000));
     expect(s.reps).toBe(3);
     expect(s.lapses).toBe(0);

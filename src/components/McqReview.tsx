@@ -14,16 +14,23 @@ export default function McqReview({ card, intervals, onGrade }: {
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (answered) return;
-      const m = /^Digit([1-9])$/.exec(e.code);
-      if (m) {
-        const i = Number(m[1]) - 1;
-        if (i < card.choices.length) setPicked(i);
+      if (!answered) {
+        const m = /^Digit([1-9])$/.exec(e.code);
+        if (m) {
+          const i = Number(m[1]) - 1;
+          if (i < card.choices.length) setPicked(i);
+        }
+        return;
+      }
+      if (!correct && (e.code === 'Enter' || e.code === 'Space')) { e.preventDefault(); onGrade('again'); }
+      if (correct) {
+        const map: Record<string, Grade> = { Digit2: 'hard', Digit3: 'good', Digit4: 'easy' };
+        if (map[e.code]) onGrade(map[e.code]);
       }
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [answered, card.choices.length]);
+  }, [answered, correct, card.choices.length, onGrade]);
 
   return (
     <div className="flex flex-col gap-4">
